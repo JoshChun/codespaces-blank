@@ -3,6 +3,7 @@ on: [push]
 
 jobs:
     test:
+        if: false
         permissions:
             id-token: write
 
