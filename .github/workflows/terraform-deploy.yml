@@ -6,6 +6,8 @@ on:
 
 jobs:
     terraform:
+        permissions:
+            id-token: write
         runs-on: ubuntu-latest
         steps:
             - name: Checkout repository
