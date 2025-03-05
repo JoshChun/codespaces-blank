@@ -8,3 +8,24 @@ variable "rg_location" {
     type = string
     default = "australiaeast"
 }
+
+variable "vm_name" {
+    description = "Virtual machine name"
+    type = string
+}
+
+variable "admin_username" {
+    description = "Admin username for virtual machine"
+    type = string
+}
+
+variable "admin_password" {
+    description = "Admin password for virtual machine"
+    type = string
+    sensitive = true
+}
+
+variable "public_ssh_key" {
+    description = "SSH public key"
+    type = string
+}
