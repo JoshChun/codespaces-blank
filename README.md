@@ -54,4 +54,50 @@
     curl http://localhost:9100/metrics
     ```
 
+5. **Install Prometheus on the Linux VM:**
+    - Installed Prometheus on the Linux VM to collect and store metrics.
+    - Created and enabled Prometheus as a Service.
 
+    1. Download & Install
+    ```
+    wget https://github.com/prometheus/prometheus/releases/download/v<VERSION>/prometheus-<VERSION>.linux-amd64.tar.gz
+    tar xvfz prometheus-*.tar.gz
+    sudo mv prometheus-*/prometheus /usr/local/bin/
+    sudo mv prometheus-*/promtool /usr/local/bin/
+    sudo mv prometheus-*/prometheus.yml /etc/prometheus/
+    sudo mv prometheus-*/consoles /etc/prometheus/
+    sudo mv prometheus-*/console_libraries /etc/prometheus/
+    ```
+    2. Add Node Exporter as a scrape target
+    Edit the config file /etc/prometheus/prometheus.yml:
+    ```
+    global:
+        scrape_interval: 15s  # Collect metrics every 15 seconds
+
+    scrape_configs:
+        - job_name: "node_exporter"
+            static_configs:
+            - targets: ["localhost:9100"]  # Node Exporter on this VM
+
+    ```
+    3. Create a Systemd Service
+    ```
+    echo "[Unit]
+    Description=Prometheus
+    After=network.target
+
+    [Service]
+    User=root
+    ExecStart=/usr/local/bin/prometheus --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/var/lib/prometheus/
+    Restart=always
+
+    [Install]
+    WantedBy=multi-user.target" | sudo tee /etc/systemd/system/prometheus.service
+    ```
+    3. Start & Enable Prometheus
+    ```
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now prometheus
+    curl http://localhost:9090/metrics
+    curl -s http://localhost:9090/api/v1/targets | jq
+    ```
