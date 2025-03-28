@@ -101,3 +101,14 @@
     curl http://localhost:9090/metrics
     curl -s http://localhost:9090/api/v1/targets | jq
     ```
+
+6. **Install and Run Ansible:**
+    1. Install Ansible
+    ```
+    pipx install --include-deps ansible
+    ```
+    2. Install Grafana.Grafana collection
+    ```
+    ansible-galaxy collection install grafana.grafana
+    ```
+    

@@ -2,11 +2,11 @@
 - name: Install Grafana on remote hosts
   hosts: remote_servers
   become: yes
-  vars:
+  vars_files:
     - secrets.yml
   tasks:
     - name: Install Grafana using grafana.grafana role
-      grafana.grafana.grafana:
+      grafana.grafana:
         grafana_admin_password: "{{ grafana_admin_password }}"
         grafana_version: "latest"
           
