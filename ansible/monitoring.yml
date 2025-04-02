@@ -1,0 +1,120 @@
+---
+- name: Install and Configure Monitoring Stack (Prometheus, Node Exporter, Grafana)
+  hosts: monitoring
+  become: yes
+  tasks:
+    - name: Ensure dependencies are installed
+      package:
+        name: [wget, curl, tar, unzip]
+        state: present
+
+    # Install Prometheus
+    - name: Create Prometheus user
+      user:
+        name: prometheus
+        system: yes
+        shell: /bin/false
+        create_home: no
+
+    - name: Download Prometheus
+      get_url:
+        url: "https://github.com/prometheus/prometheus/releases/latest/download/prometheus-linux-amd64.tar.gz"
+        dest: "/tmp/prometheus.tar.gz"
+
+    - name: Extract Prometheus
+      ansible.builtin.unarchive:
+        src: "/tmp/prometheus.tar.gz"
+        dest: "/opt"
+        remote_src: yes
+
+    - name: Move Prometheus binary
+      command: mv /opt/prometheus-*/prometheus /usr/local/bin/
+
+    - name: Create Prometheus systemd service
+      copy:
+        dest: /etc/systemd/system/prometheus.service
+        content: |
+          [Unit]
+          Description=Prometheus
+          After=network.target
+
+          [Service]
+          User=prometheus
+          ExecStart=/usr/local/bin/prometheus --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/var/lib/prometheus
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd and start Prometheus
+      systemd:
+        name: prometheus
+        enabled: yes
+        state: started
+
+    # Install Node Exporter
+    - name: Download Node Exporter
+      get_url:
+        url: "https://github.com/prometheus/node_exporter/releases/latest/download/node_exporter-linux-amd64.tar.gz"
+        dest: "/tmp/node_exporter.tar.gz"
+
+    - name: Extract Node Exporter
+      ansible.builtin.unarchive:
+        src: "/tmp/node_exporter.tar.gz"
+        dest: "/opt"
+        remote_src: yes
+
+    - name: Move Node Exporter binary
+      command: mv /opt/node_exporter-*/node_exporter /usr/local/bin/
+
+    - name: Create Node Exporter systemd service
+      copy:
+        dest: /etc/systemd/system/node_exporter.service
+        content: |
+          [Unit]
+          Description=Node Exporter
+          After=network.target
+
+          [Service]
+          User=root
+          ExecStart=/usr/local/bin/node_exporter
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd and start Node Exporter
+      systemd:
+        name: node_exporter
+        enabled: yes
+        state: started
+
+    # Install Grafana
+    - name: Add Grafana repository
+      copy:
+        dest: /etc/apt/sources.list.d/grafana.list
+        content: "deb https://packages.grafana.com/oss/deb stable main"
+
+    - name: Install Grafana
+      apt:
+        name: grafana
+        state: present
+        update_cache: yes
+
+    - name: Start and enable Grafana
+      systemd:
+        name: grafana-server
+        enabled: yes
+        state: started
+
+    # Open firewall ports (if needed)
+    - name: Allow Prometheus, Node Exporter, and Grafana through firewall
+      ansible.builtin.iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: "{{ item }}"
+        jump: ACCEPT
+      loop:
+        - 9090  # Prometheus
+        - 9100  # Node Exporter
+        - 3000  # Grafana
